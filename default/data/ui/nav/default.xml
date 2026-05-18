@@ -1,0 +1,8 @@
+<nav search_view="search" color="#2C3E50">
+  <view name="peak_executive_dashboard" default="true" label="Executive Dashboard" />
+  
+  <view name="inputs" label="Data Inputs" />
+  <view name="configuration" label="Configuration" />
+  
+  <view name="search" label="Search" />
+</nav>
