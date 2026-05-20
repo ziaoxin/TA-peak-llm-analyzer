@@ -3,7 +3,7 @@
 ![Splunk](https://img.shields.io/badge/Splunk-Enterprise_10.x-black?logo=splunk)
 ![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)
 ![AI](https://img.shields.io/badge/LLM-OpenAI_Compatible-green?logo=openai)
-![License](https://img.shields.io/github/license/ziaoxin/TA-peak-llm-analyzer?style=flat-square)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 An enterprise-grade Splunk Add-on that transforms your SOC into an autonomous Threat Hunting operation center based on the **PEAK Framework** (Prepare, Execute, Act).
 
