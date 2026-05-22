@@ -34,20 +34,10 @@ fields = [
         )
     ), 
     field.RestField(
-        'custom_message',
+        'target_index',
         required=False,
         encrypted=False,
-        default='Alive',
-        validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
-        )
-    ), 
-    field.RestField(
-        'password',
-        required=False,
-        encrypted=True,
-        default=None,
+        default='peaklog',
         validator=validator.String(
             min_len=0, 
             max_len=8192, 

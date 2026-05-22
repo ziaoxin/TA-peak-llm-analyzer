@@ -31,23 +31,24 @@ def execute_ai_spl(helper, service, spl_query):
         return result_data
     except Exception as e:
         helper.log_error(f"[Agentic Engine] FAILED execution: {str(e)}")
-        return []
+    
+    return []
 
 # ==========================================
-# HELPER 2: Fetch Real Logs (M-ATH Concept)
+# HELPER 2: Fetch Real Logs (Context Distillation)
 # ==========================================
-def fetch_rare_logs(helper, service, target_index):
+def fetch_rare_logs(helper, service, source_index):
     """
-    Fetch the most recent rare/anomalous logs from the target index.
+    Fetch the most recent rare/anomalous logs from the SOURCE index.
     Includes context distillation to prevent context window overflow.
     """
-    helper.log_info("Fetching real rare logs for analysis...")
-    spl = f"search index={target_index} | head 5 | table _raw"
+    helper.log_info(f"Fetching real rare logs from source index: {source_index}...")
+    spl = f"search index={source_index} | head 5 | table _raw"
     
     try:
         results_data = execute_ai_spl(helper, service, spl)
         if not results_data:
-            helper.log_debug("No logs returned from target index.")
+            helper.log_debug("No logs returned from source index.")
             return None
         
         raw_logs = [item.get("_raw", "") for item in results_data if "_raw" in item]
@@ -73,6 +74,7 @@ def extract_token_usage(helper, response_json, response_headers):
     Ensures FinOps tracking never crashes the main thread.
     """
     try:
+        # Check standard OpenAI JSON payload
         if "usage" in response_json:
             usage = response_json["usage"]
             if "total_tokens" in usage:
@@ -82,6 +84,7 @@ def extract_token_usage(helper, response_json, response_headers):
             elif "input_tokens" in usage and "output_tokens" in usage:
                 return int(usage["input_tokens"]) + int(usage["output_tokens"])
         
+        # Check HTTP Headers for proxy/gateway usage
         header_keys = [k.lower() for k in response_headers.keys()]
         for key in header_keys:
             if "token-usage" in key or "x-ratelimit-usage" in key:
@@ -135,7 +138,16 @@ def call_llm_api(helper, api_key, base_url, model, system_prompt, user_prompt, m
     except requests.exceptions.RequestException as e:
         helper.log_error(f"Network error during API call: {str(e)}")
         raise
+# ==========================================
+# VALIDATION: AOB Required Function
+# ==========================================
+def validate_input(helper, definition):
+    """
+    Implement your own validation logic to validate the input stanza configurations.
+    This function is strictly required by Splunk Add-on Builder.
+    """
 
+    pass
 # ==========================================
 # MAIN WORKFLOW: The Autonomous Agent
 # ==========================================
@@ -157,11 +169,17 @@ def collect_events(helper, ew):
             raise ValueError("Failed to acquire session_key from Splunk core.")
         service = client.Service(token=session_key)
         
-        # Acquire Global Setup Configurations
+        # ==========================================
+        # Acquire Global Setup Configurations & Indexes
+        # ==========================================
         api_key = helper.get_global_setting("api_key")
         base_url = helper.get_global_setting("base_url")
         model_name = helper.get_global_setting("model_name")
-        target_index = helper.get_output_index() or "main"
+        
+        # Source Index: Used to pull raw anomalous logs
+        source_index = helper.get_output_index() or "main"
+        # Target Index: Used to store AI reports for the dashboard
+        target_index = helper.get_arg("target_index") or "peaklog"
 
         if not api_key or not base_url:
              raise ValueError("API Key or Base URL is missing in Global Settings.")
@@ -169,13 +187,14 @@ def collect_events(helper, ew):
         # ==========================================
         # PHASE 1: PREPARE (Blueprint Generation)
         # ==========================================
-        rare_logs_payload = fetch_rare_logs(helper, service, target_index)
+        rare_logs_payload = fetch_rare_logs(helper, service, source_index)
         if not rare_logs_payload:
             helper.log_info("No anomalous logs found to analyze. Terminating cycle early.")
             return
 
         sys_prompt_prepare = "You are a Senior Threat Hunter. You MUST reply in JSON format. Be extremely concise. No pleasantries. Schema: 'analysis' (string), 'hypotheses' (array). Each hypothesis MUST have 'ABLE' (must be a nested JSON object with keys: Actor, Behavior, Location, Evidence), 'spl_round_1_validation', and 'spl_round_2_drilldown'."
-        usr_prompt_prepare = f"Analyze these logs:\n{rare_logs_payload}\n\nGenerate exactly 2 hypotheses. CRITICAL: For SPL, strictly start with 'search index={{target_index}}'. Output ONLY JSON."
+        
+        usr_prompt_prepare = f"Analyze these logs:\n{rare_logs_payload}\n\nGenerate exactly 2 hypotheses. CRITICAL: For SPL, strictly start with 'search index={source_index}'. Output ONLY JSON."
 
         helper.log_info("Triggering LLM for Prepare Phase...")
         blueprint_text, prep_tokens = call_llm_api(helper, api_key, base_url, model_name, sys_prompt_prepare, usr_prompt_prepare, max_tokens=1500)
@@ -183,6 +202,7 @@ def collect_events(helper, ew):
         ai_hunting_plan = json.loads(blueprint_text.strip())
         hypotheses = ai_hunting_plan.get("hypotheses", [])
 
+        # Write Phase 1 Report to Target Index
         ew.write_event(helper.new_event(
             source=helper.get_input_type(), index=target_index, sourcetype="_json",
             time=time.time(), 
@@ -196,8 +216,9 @@ def collect_events(helper, ew):
         all_hunt_evidence = []
         for i, hyp in enumerate(hypotheses):
             hyp_start = time.time()
-            spl_r1 = hyp.get("spl_round_1_validation", "").replace("{target_index}", target_index)
-            spl_r2 = hyp.get("spl_round_2_drilldown", "").replace("{target_index}", target_index)
+            # Enforce source_index replacement in case LLM hallucinated index variables
+            spl_r1 = hyp.get("spl_round_1_validation", "").replace("{source_index}", source_index)
+            spl_r2 = hyp.get("spl_round_2_drilldown", "").replace("{source_index}", source_index)
             
             r1_hits = len(execute_ai_spl(helper, service, spl_r1))
             r2_hits = len(execute_ai_spl(helper, service, spl_r2))
@@ -217,6 +238,7 @@ def collect_events(helper, ew):
                 "execution_duration_sec": round(time.time() - hyp_start, 2)
             })
 
+        # Write Phase 2 Evidence to Target Index
         ew.write_event(helper.new_event(
             source=helper.get_input_type(), index=target_index, sourcetype="_json",
             time=time.time(), 
@@ -239,6 +261,7 @@ def collect_events(helper, ew):
             helper.log_error("JSON Truncation in Act Phase. Engaging fallback.")
             final_report = {"executive_summary": "LLM output truncated.", "risk_score": -1, "raw": report_text}
 
+        # Write Phase 3 Final Report to Target Index
         ew.write_event(helper.new_event(
             source=helper.get_input_type(), index=target_index, sourcetype="_json",
             time=time.time(), 
@@ -254,7 +277,8 @@ def collect_events(helper, ew):
         helper.log_error(f"FATAL Pipeline Crash: {error_msg}")
         
         try:
-            fallback_index = helper.get_output_index() or "main"
+            # Fallback to write error events into the target index
+            fallback_index = target_index if 'target_index' in locals() else "main"
             ew.write_event(helper.new_event(
                 source=helper.get_input_type(), index=fallback_index, sourcetype="_json",
                 time=time.time(),
@@ -266,6 +290,6 @@ def collect_events(helper, ew):
                     "agent_status": "CRITICAL_FAILURE"
                 }, ensure_ascii=False)
             ))
-            helper.log_info("Sent Error_State alert to main index successfully.")
+            helper.log_info("Sent Error_State alert to target index successfully.")
         except Exception as write_err:
             helper.log_error(f"Secondary Crash: Could not write PEAK_Error event. {str(write_err)}")

@@ -96,12 +96,8 @@
                     "index": {
                         "type": "string"
                     },
-                    "custom_message": {
+                    "target_index": {
                         "type": "string"
-                    },
-                    "password": {
-                        "type": "string",
-                        "format": "password"
                     },
                     "disabled": {
                         "type": "string",
@@ -121,12 +117,8 @@
                     "index": {
                         "type": "string"
                     },
-                    "custom_message": {
+                    "target_index": {
                         "type": "string"
-                    },
-                    "password": {
-                        "type": "string",
-                        "format": "password"
                     },
                     "disabled": {
                         "type": "string",
@@ -149,12 +141,8 @@
                     "index": {
                         "type": "string"
                     },
-                    "custom_message": {
+                    "target_index": {
                         "type": "string"
-                    },
-                    "password": {
-                        "type": "string",
-                        "format": "password"
                     }
                 }
             }

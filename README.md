@@ -8,16 +8,16 @@
 An enterprise-grade Splunk Add-on that transforms your SOC into an autonomous Threat Hunting operation center based on the **PEAK Framework** (Prepare, Execute, Act).
 
 ## ✨ Core Features
-* 🤖 **Autonomous Reasoning**: Dynamically generates ABLE hypotheses and multi-round drill-down SPL queries.
-* 💰 **FinOps Tracking**: Granular tracking of LLM API token consumption and financial costs per hunt cycle.
-* 📊 **Executive Dashboard**: A premium dark-themed, pure XML dashboard displaying real-time risk scores and automated hunting trajectories.
-* 🛡️ **Bulletproof Architecture**: Built-in context distillation, hallucination safeguards, and robust cross-phase data validation.
+* **Autonomous Reasoning**: Dynamically generates ABLE hypothesis and multi-round drill-down SPL queries.
+* **FinOps Tracking**: Granular tracking of LLM API token consumption and financial costs per hunt.
+* **Executive Dashboard**: A dark-themed, pure XML dashboard displaying real-time risk scores and automated hunting trajectories.
+* **Bulletproof Architecture**: Built-in context truncation, hallucination safeguards, and robust cross-phase data validation.
 
 ## 📦 Installation Guide
-1. Navigate to the [Releases](https://github.com/YourGitHubName/TA-peak-llm-analyzer/releases) matrix and download the latest `TA-peak-llm-analyzer-1.0.x.spl` package.
+1. Go to the [Releases](https://github.com/YourGitHubName/TA-peak-llm-analyzer/releases) page and download the latest `TA-peak-llm-analyzer-1.0.x.spl` package.
 2. In your Splunk Web UI, navigate to **Manage Apps** -> **Install app from file**.
-3. Upload the `.spl` file binary and restart the Splunk daemon if prompted.
-4. Access the Add-on's **Configuration** portal to securely map your LLM API Credentials and Base URL endpoint.
+3. Upload the `.spl` file and restart Splunk if prompted.
+4. Navigate to the App's **Configuration** page to securely enter your LLM API Key and Base URL.
 
-## 🤝 Contribution Guidelines
-Contributions are highly welcome! Please ensure you do not commit any files within the volatile `local/` directory. Submit your Pull Requests utilizing semantic commit messages to the `main` branch.
+## 🤝 Contribution
+Contributions are highly welcome! Please ensure you do not commit any files within the `local/` directory. Submit your Pull Requests to the `main` branch.

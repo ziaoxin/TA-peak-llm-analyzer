@@ -6,9 +6,10 @@
       <single>
         <title>Latest Risk Score</title>
         <search>
-          <query>index=main event_type="PEAK_Final_Report" | stats latest(content.risk_score)</query>
+          <query>index=peaklog event_type="PEAK_Final_Report" | stats latest(content.risk_score)</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
         <option name="rangeValues">[0,30,70,100]</option>
         <option name="rangeColors">["0x53a051","0xf8be34","0xf1813f","0xdc4e41"]</option>
@@ -19,9 +20,10 @@
       <single>
         <title>Average Risk Score (Today)</title>
         <search>
-          <query>index=main event_type="PEAK_Final_Report" | where _time &gt;= relative_time(now(), "@d") | stats avg(content.risk_score) as avg_score | eval avg_score=round(avg_score, 2)</query>
+          <query>index=peaklog event_type="PEAK_Final_Report" | where _time &gt;= relative_time(now(), "@d") | stats avg(content.risk_score) as avg_score | eval avg_score=round(avg_score, 2)</query>
           <earliest>@d</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
       </single>
     </panel>
@@ -31,9 +33,10 @@
       <single>
         <title>Total Token Usage (Month)</title>
         <search>
-          <query>index=main event_type="PEAK_Final_Report" | stats sum(total_tokens_used)</query>
+          <query>index=peaklog event_type="PEAK_Final_Report" | stats sum(total_tokens_used)</query>
           <earliest>@mon</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
         <option name="underLabel">Tokens Consumed This Month</option>
       </single>
@@ -42,9 +45,10 @@
       <single>
         <title>Token Usage (Today)</title>
         <search>
-          <query>index=main event_type="PEAK_Final_Report" | where _time &gt;= relative_time(now(), "@d") | stats sum(total_tokens_used)</query>
+          <query>index=peaklog event_type="PEAK_Final_Report" | where _time &gt;= relative_time(now(), "@d") | stats sum(total_tokens_used)</query>
           <earliest>@d</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
         <option name="underLabel">Tokens Consumed Today</option>
       </single>
@@ -55,9 +59,10 @@
       <single>
         <title>Successful Hunts (Today)</title>
         <search>
-          <query>index=main (event_type="PEAK_Plan" OR event_type="PEAK_Evidence" OR event_type="PEAK_Final_Report") | stats count by session_id | search count=3 | stats count</query>
+          <query>index=peaklog (event_type="PEAK_Plan" OR event_type="PEAK_Evidence" OR event_type="PEAK_Final_Report") | stats count by session_id | search count=3 | stats count</query>
           <earliest>@d</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
         <option name="rangeValues">[0]</option>
         <option name="rangeColors">["0xdc4e41","0x53a051"]</option>
@@ -69,9 +74,10 @@
       <single>
         <title>Anomalous/Failed Hunts (Today)</title>
         <search>
-          <query>index=main (event_type="PEAK_Plan" OR event_type="PEAK_Evidence" OR event_type="PEAK_Final_Report" OR event_type="PEAK_Error") | stats count, latest(event_type) as last_evt by session_id | where count &lt; 3 OR last_evt="PEAK_Error" | stats count</query>
+          <query>index=peaklog (event_type="PEAK_Plan" OR event_type="PEAK_Evidence" OR event_type="PEAK_Final_Report" OR event_type="PEAK_Error") | stats count, latest(event_type) as last_evt by session_id | where count &lt; 3 OR last_evt="PEAK_Error" | stats count</query>
           <earliest>@d</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
         <option name="rangeValues">[0]</option>
         <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
@@ -86,7 +92,7 @@
         <title>Recent AI Hunting Reports Summary (Transaction View)</title>
         <search>
           <query>
-index=main sourcetype="_json" (event_type="PEAK_Plan" OR event_type="PEAK_Evidence" OR event_type="PEAK_Final_Report" OR event_type="PEAK_Error")
+index=peaklog sourcetype="_json" (event_type="PEAK_Plan" OR event_type="PEAK_Evidence" OR event_type="PEAK_Final_Report" OR event_type="PEAK_Error")
 | stats 
     min(timestamp) as Start_Time_Epoch,
     max(timestamp) as End_Time_Epoch,
@@ -103,6 +109,7 @@ index=main sourcetype="_json" (event_type="PEAK_Plan" OR event_type="PEAK_Eviden
           </query>
           <earliest>-7d@h</earliest>
           <latest>now</latest>
+          <refresh>2m</refresh>
         </search>
         <option name="drilldown">none</option>
       </table>
